@@ -1,31 +1,13 @@
 services:
-  caddy:
-    container_name: caddy
-    image: docker.io/library/caddy:2-alpine
-    network_mode: host
-    restart: unless-stopped
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data:rw
-      - caddy-config:/config:rw
-    environment:
-      - SEARXNG_HOSTNAME=${SEARXNG_HOSTNAME:-http://localhost}
-      - SEARXNG_TLS=${LETSENCRYPT_EMAIL:-internal}
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
-        max-file: "1"
-
-  redis:
-    container_name: redis
+  valkey:
+    container_name: valkey
     image: docker.io/valkey/valkey:8-alpine
     command: valkey-server --save 30 1 --loglevel warning
     restart: unless-stopped
     networks:
       - searxng
     volumes:
-      - valkey-data2:/data
+      - valkey-data:/data
     logging:
       driver: "json-file"
       options:
@@ -35,16 +17,19 @@ services:
   searxng:
     container_name: searxng
     image: docker.io/searxng/searxng:latest
+    depends_on:
+      - valkey
     restart: unless-stopped
     networks:
       - searxng
     ports:
-      - "127.0.0.1:8080:8080"
+      - "8080:8080"
     volumes:
       - ./searxng:/etc/searxng:rw
       - searxng-data:/var/cache/searxng:rw
     environment:
-      - SEARXNG_BASE_URL=https://${SEARXNG_HOSTNAME:-localhost}/
+      - SEARXNG_BASE_URL=http://localhost:8080/
+      - SEARXNG_REDIS_URL=redis://valkey:6379/0
     logging:
       driver: "json-file"
       options:
@@ -55,7 +40,69 @@ networks:
   searxng:
 
 volumes:
-  caddy-data:
-  caddy-config:
-  valkey-data2:
+  valkey-data:
   searxng-data:
+
+# Original
+#services:
+#  caddy:
+#    container_name: caddy
+#    image: docker.io/library/caddy:2-alpine
+#    network_mode: host
+#    restart: unless-stopped
+#    volumes:
+#      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+#      - caddy-data:/data:rw
+#      - caddy-config:/config:rw
+#    environment:
+#      - SEARXNG_HOSTNAME=${SEARXNG_HOSTNAME:-http://localhost}
+#      - SEARXNG_TLS=${LETSENCRYPT_EMAIL:-internal}
+#    logging:
+#      driver: "json-file"
+#      options:
+#        max-size: "1m"
+#        max-file: "1"
+#
+#  redis:
+#    container_name: redis
+#    image: docker.io/valkey/valkey:8-alpine
+#    command: valkey-server --save 30 1 --loglevel warning
+#    restart: unless-stopped
+#    networks:
+#      - searxng
+#    volumes:
+#      - valkey-data2:/data
+#    logging:
+#      driver: "json-file"
+#      options:
+#        max-size: "1m"
+#        max-file: "1"
+#
+#  searxng:
+#    container_name: searxng
+#    image: docker.io/searxng/searxng:latest
+#    restart: unless-stopped
+#    networks:
+#      - searxng
+#    ports:
+#      - "127.0.0.1:8080:8080"
+#    volumes:
+#      - ./searxng:/etc/searxng:rw
+#      - searxng-data:/var/cache/searxng:rw
+#    environment:
+#      - SEARXNG_BASE_URL=https://${SEARXNG_HOSTNAME:-localhost}/
+#    logging:
+#      driver: "json-file"
+#      options:
+#        max-size: "1m"
+#        max-file: "1"
+#
+#networks:
+#  searxng:
+#
+#volumes:
+#  caddy-data:
+#  caddy-config:
+#  valkey-data2:
+#  searxng-data:
+
