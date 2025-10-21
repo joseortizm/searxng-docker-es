@@ -40,7 +40,7 @@ lsof -i :8080
 SearXNG necesita una clave privada para encriptar sesiones y cookies. 
 Ejecuta este comando en la terminal (desde la carpeta raíz del proyecto):
 ```shell
-`sed -i '' "s|ultrasecretkey|$(openssl rand -hex 32)|g" searxng/settings.yml`
+sed -i '' "s|ultrasecretkey|$(openssl rand -hex 32)|g" searxng/settings.yml
 ```
 Esto reemplazará automáticamente el texto ```ultrasecretkey``` 
 por una clave aleatoria dentro del archivo ```searxng/settings.yml```.
